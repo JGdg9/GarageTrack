@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "format:check": "prettier --check \"index.html\" \"styles.css\" \"js/**/*.js\"",
-    "lint": "eslint \"js/**/*.js\""
+    "format:check": "prettier --check \"index.html\" \"styles.css\" \"js/**/*.js\" \"test/**/*.js\"",
+    "lint": "eslint \"js/**/*.js\" \"test/**/*.js\"",
+    "test": "node --test"
   },
   "overrides": {
     "minimatch": "11.0.5"
