@@ -81,7 +81,6 @@ def start_ephemeral_mysql() -> subprocess.Popen[bytes]:
             "--skip-log-bin",
             "--table-open-cache=64",
             "--thread-cache-size=2",
-            "--log-error=/dev/stderr",
         ]
     )
     try:
