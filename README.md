@@ -9,6 +9,8 @@ GarageTrack helps you keep vehicle details, maintenance history, and costs in on
 
 The public demo uses sample data and is read-only.
 
+![GarageTrack dashboard](frontend/assets/dashboard.png)
+
 ## Features
 
 - Add, edit, view, and remove vehicles.
@@ -19,6 +21,18 @@ The public demo uses sample data and is read-only.
 ## Technologies
 
 Python and FastAPI power the REST API. MySQL stores the data, and HTML, CSS, and JavaScript build the interface.
+
+## Technical decisions
+
+- FastAPI provides typed API endpoints, request validation, and interactive API documentation.
+- MySQL stores vehicles and maintenance records in related tables, with a foreign key to enforce their relationship.
+- Routers handle HTTP requests and responses; service functions contain the operations that work with the database.
+- Maintenance costs use Python `Decimal` and MySQL `DECIMAL(10,2)` to avoid floating-point rounding errors in monetary values.
+- Deleting a vehicle with maintenance records is blocked by a service check and an `ON DELETE RESTRICT` foreign key, preserving its history.
+
+## Concepts practiced
+
+REST APIs, input validation, relational databases, unit testing, and integration testing with MySQL.
 
 ## Run locally on Windows
 
@@ -84,5 +98,3 @@ npm run format:check
 - `backend/app/models.py` defines the database tables.
 - `backend/tests/` contains unit and MySQL integration tests.
 - `frontend/` contains the HTML, CSS, and JavaScript.
-
-![GarageTrack dashboard](frontend/assets/dashboard.png)
