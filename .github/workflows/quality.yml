@@ -69,6 +69,52 @@ jobs:
         run: python -m pytest backend/tests/integration
       - name: Build the public demo container
         run: docker build --tag garagetrack:check .
+      - name: Build the Render demo container
+        run: docker build --file Dockerfile.render --tag garagetrack:render-check .
+      - name: Verify the Render demo container
+        run: |
+          docker run --detach --name garagetrack-render-check --publish 127.0.0.1:18080:10000 garagetrack:render-check
+          for attempt in $(seq 1 120); do
+            if curl --fail --silent http://127.0.0.1:18080/api/v1/statistics > /tmp/garagetrack-statistics.json; then
+              break
+            fi
+            sleep 2
+          done
+          if [ ! -s /tmp/garagetrack-statistics.json ]; then
+            docker logs garagetrack-render-check
+            exit 1
+          fi
+          python - <<'PY'
+          import json
+          import urllib.error
+          import urllib.request
+
+          base_url = "http://127.0.0.1:18080"
+          with urllib.request.urlopen(f"{base_url}/health") as response:
+              assert json.load(response)["status"] == "ok"
+          with urllib.request.urlopen(f"{base_url}/api/v1/config") as response:
+              assert json.load(response)["demo_read_only"] is True
+          with urllib.request.urlopen(f"{base_url}/api/v1/statistics") as response:
+              statistics = json.load(response)
+          assert statistics["total_vehicles"] == 2
+          assert statistics["total_maintenance_records"] == 3
+          assert statistics["total_expenses"] == "890.40"
+          request = urllib.request.Request(
+              f"{base_url}/api/v1/vehicles",
+              data=b'{"brand":"Demo","model":"Vehicle","year":2024,"current_mileage":0}',
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              urllib.request.urlopen(request)
+          except urllib.error.HTTPError as error:
+              assert error.code == 403
+          else:
+              raise AssertionError("The public demo accepted a write request.")
+          PY
+      - name: Remove the Render demo container
+        if: always()
+        run: docker rm --force garagetrack-render-check 2>/dev/null || true
   delivery:
     name: Package verified source
     needs: quality

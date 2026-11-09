@@ -1,0 +1,42 @@
+FROM python:3.12-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEMO_READ_ONLY=true
+ENV RENDER_EPHEMERAL_MYSQL=true
+ENV PORT=10000
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y ca-certificates curl debconf-utils \
+    && curl --fail --silent --show-error --location \
+        https://dev.mysql.com/get/mysql-apt-config_0.8.40-1_all.deb \
+        --output /tmp/mysql-apt-config.deb \
+    && printf '%s\n' \
+        'mysql-apt-config mysql-apt-config/select-server select mysql-8.4-lts' \
+        'mysql-apt-config mysql-apt-config/enable-repo select Enabled' \
+        | debconf-set-selections \
+    && DEBIAN_FRONTEND=noninteractive dpkg --install /tmp/mysql-apt-config.deb \
+    && apt-get update \
+    && printf '%s\n' '#!/bin/sh' 'exit 101' > /usr/sbin/policy-rc.d \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y mysql-server \
+    && rm /usr/sbin/policy-rc.d /tmp/mysql-apt-config.deb \
+    && apt-get purge -y debconf-utils curl \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY backend/requirements.txt backend/requirements.txt
+RUN python -m pip install --no-cache-dir --requirement backend/requirements.txt
+
+COPY backend/app backend/app
+COPY frontend/index.html frontend/index.html
+COPY frontend/styles.css frontend/styles.css
+COPY frontend/js frontend/js
+
+WORKDIR /app/backend
+
+EXPOSE 10000
+
+CMD ["python", "-m", "app.startup"]

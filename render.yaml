@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: garagetrack-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DEMO_READ_ONLY
+        value: "true"
+      - key: RENDER_EPHEMERAL_MYSQL
+        value: "true"

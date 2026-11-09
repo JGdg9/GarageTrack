@@ -29,6 +29,8 @@ GarageTrack/
 ├── .github/workflows/quality.yml
 ├── .dockerignore
 ├── Dockerfile
+├── Dockerfile.render
+├── render.yaml
 ├── backend/
 │   ├── app/
 │   │   ├── main.py
@@ -113,17 +115,11 @@ FastAPI publishes the OpenAPI interface at `/docs` and `/openapi.json`.
 
 ## Public demo
 
-The public demo is deployed from the root `Dockerfile`. The container waits for MySQL, creates any missing tables from the SQLAlchemy models, and inserts two synthetic vehicles and three service records only when `DEMO_READ_ONLY=true` and the database is empty. The image defaults to read-only mode. Write requests receive HTTP `403` even if they bypass the frontend.
+The Render Blueprint in `render.yaml` defines a single free Docker web service named `garagetrack-demo`. `Dockerfile.render` installs MySQL Community Server 8.4 and runs it with TCP networking disabled. The FastAPI app connects to MySQL through a Unix socket. Render exposes only the HTTP port. The service uses synthetic data and rejects writes with HTTP `403`.
 
-To host the demo on Railway:
+Render Free costs $0, but its web service sleeps after 15 minutes without traffic, can take about a minute to wake, and has an ephemeral filesystem. MySQL is therefore initialized with the demo schema and seed records whenever the service starts; records do not persist across sleep, restarts, or redeployments. The free instance has 512 MB of memory and 0.1 CPU, so this combined MySQL and FastAPI container is intended only for a small portfolio demo. Render may suspend free services when included usage limits are reached. Do not attach a payment method, add paid resources, or upgrade the service if the goal is to keep hosting free. See Render's [free instance limits](https://render.com/docs/free), [Blueprint reference](https://render.com/docs/blueprint-spec), and [MySQL installation guide](https://dev.mysql.com/doc/refman/8.4/en/linux-installation-apt-repo.html).
 
-1. Create a project and add Railway's MySQL service. Keep its network private and use the database name `garagetrack`.
-2. Keep the MySQL volume mounted at `/var/lib/mysql` so its files survive container restarts.
-3. Deploy the public GarageTrack repository from its `main` branch. Railway detects the Dockerfile and builds the app service.
-4. In the app service, set `DATABASE_URL` to the MySQL service reference `${{MySQL.MYSQL_URL}}` and set `DEMO_READ_ONLY` to `true`. Name the database service `MySQL` or update the reference to match its name.
-5. Generate an HTTPS public domain for the app service. The same domain serves the interface, `/health`, and `/docs`.
-
-The GitHub source and the Railway demo are public, so the demo contains only synthetic records. Do not store real vehicle information there. Railway's Free plan currently includes $1 of monthly usage credit; services can stop when credits run out. Trial volumes are deleted 30 days after the trial credits expire. A sleeping service may take extra time to answer its first request. Check [Railway pricing](https://docs.railway.com/pricing/plans), [trial limits](https://docs.railway.com/pricing/free-trial), and [MySQL setup](https://docs.railway.com/databases/mysql) before relying on the public URL.
+To create the service, sign in to Render, connect the public `JGdg9/GarageTrack` GitHub repository, choose **New > Blueprint**, and deploy the `main` branch. Check that the Blueprint preview shows one web service on the Free plan before deploying. Render assigns an HTTPS `onrender.com` address for the interface, `/health`, and `/docs`. The GitHub repository is public, and the demo contains synthetic records only; do not enter real vehicle information.
 
 ## Windows setup
 
@@ -145,7 +141,7 @@ CREATE DATABASE garagetrack CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 CREATE DATABASE garagetrack_test CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 CREATE USER 'garagetrack_app'@'127.0.0.1' IDENTIFIED BY 'replace-with-a-local-password';
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE ON garagetrack.* TO 'garagetrack_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, REFERENCES ON garagetrack.* TO 'garagetrack_app'@'127.0.0.1';
 
 CREATE USER 'garagetrack_test'@'127.0.0.1' IDENTIFIED BY 'replace-with-a-different-password';
 GRANT ALL PRIVILEGES ON garagetrack_test.* TO 'garagetrack_test'@'127.0.0.1';
@@ -225,7 +221,7 @@ The integration test fixture overrides the API's normal SQLAlchemy session with 
 
 ## CI and delivery
 
-The GitHub Actions workflow runs on pull requests, pushes to `main`, and manual runs. It installs the pinned Python and JavaScript dependencies, checks Ruff, Prettier, and ESLint, runs frontend and unit tests, runs MySQL integration tests against a temporary MySQL 8.4 service, and builds the Docker image to verify the public demo package.
+The GitHub Actions workflow runs on pull requests, pushes to `main`, and manual runs. It installs the pinned Python and JavaScript dependencies, checks Ruff, Prettier, and ESLint, runs frontend and unit tests, runs MySQL integration tests against a temporary MySQL 8.4 service, builds both Docker images, and starts the Render image to verify its synthetic data and read-only API.
 
 After all checks pass on a push to `main`, the delivery job archives the committed project files and uploads a ZIP artifact associated with that commit. The artifact expires after 90 days. This repository and its artifact are public, so anyone with repository read access can download the ZIP. The package contains only tracked files; the workflow fails if `.env`, `.local`, `.venv`, or `node_modules` is tracked. It does not include database contents or credentials.
 
