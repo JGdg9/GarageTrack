@@ -229,7 +229,7 @@ The GitHub Actions workflow runs on pull requests, pushes to `main`, and manual 
 
 After all checks pass on a push to `main`, the delivery job archives the committed project files and uploads a ZIP artifact associated with that commit. The artifact expires after 90 days. This repository and its artifact are public, so anyone with repository read access can download the ZIP. The package contains only tracked files; the workflow fails if `.env`, `.local`, `.venv`, or `node_modules` is tracked. It does not include database contents or credentials.
 
-The delivery package is a public source archive associated with its commit, not a deployed image. GitHub artifacts are available to repository readers and expire after 90 days. The remote GitHub results remain unverified until the workflow has run on GitHub.
+The delivery package is a public source archive associated with its commit, not a deployed image. GitHub artifacts are available to repository readers and expire after 90 days. The first published run for commit `1a58e94` passed its quality checks, including the MySQL tests and Docker build, and uploaded the source archive in [GitHub Actions](https://github.com/JGdg9/GarageTrack/actions/runs/42624838253). Each later change has its own run result.
 
 ## Real application capture
 
