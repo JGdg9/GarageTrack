@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -31,8 +32,24 @@ class VehicleCreate(BaseModel):
 
 
 class MaintenanceCreate(BaseModel):
-    maintenance_type: str
+    maintenance_type: str = Field(min_length=1, max_length=100)
     maintenance_date: date
-    mileage: int
-    cost: float
+    mileage: int = Field(ge=0)
+    cost: Decimal = Field(ge=Decimal("0.00"), max_digits=10, decimal_places=2)
     description: str | None = None
+
+    @field_validator("maintenance_type")
+    @classmethod
+    def normalize_maintenance_type(cls, value: str) -> str:
+        normalized_value = value.strip()
+        if not normalized_value:
+            raise ValueError("Maintenance type cannot be blank.")
+        return normalized_value
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def normalize_description(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized_value = value.strip()
+        return normalized_value or None
