@@ -4,11 +4,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f5f7fb" />
+    <meta
+      name="description"
+      content="A simple workspace for tracking vehicles and maintenance costs."
+    />
     <title>GarageTrack</title>
     <link rel="stylesheet" href="/styles.css" />
     <script type="module" src="/js/app.js"></script>
   </head>
   <body>
-    <main id="app"></main>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="GarageTrack overview">
+          <span class="brand-mark" aria-hidden="true">G</span>
+          <span>GarageTrack</span>
+        </a>
+        <p class="sidebar-label">Workspace</p>
+        <nav class="sidebar-navigation" aria-label="Main navigation">
+          <button class="navigation-link is-active" data-view="dashboard" type="button">
+            <span class="navigation-marker" aria-hidden="true">01</span>
+            Overview
+          </button>
+          <button class="navigation-link" data-view="vehicles" type="button">
+            <span class="navigation-marker" aria-hidden="true">02</span>
+            Vehicles
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="connection-indicator" aria-hidden="true"></span>
+          <div>
+            <strong>Local garage</strong>
+            <span>Runs on this device</span>
+          </div>
+        </div>
+      </aside>
+      <div class="main-column">
+        <main id="app" class="page-content" aria-live="polite"></main>
+      </div>
+    </div>
+    <dialog id="app-dialog" class="app-dialog" aria-labelledby="dialog-title"></dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </body>
 </html>
