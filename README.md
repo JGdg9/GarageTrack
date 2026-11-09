@@ -18,7 +18,7 @@ The public demo uses sample data and is read-only.
 
 ## Technologies
 
-Python, FastAPI, Pydantic, SQLAlchemy, MySQL, HTML, CSS, JavaScript, and Pytest.
+Python and FastAPI power the REST API. MySQL stores the data, and HTML, CSS, and JavaScript build the interface.
 
 ## Run locally on Windows
 
