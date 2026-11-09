@@ -1,0 +1,17 @@
+{
+  "name": "garagetrack-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "format:check": "prettier --check \"index.html\" \"styles.css\" \"js/**/*.js\"",
+    "lint": "eslint \"js/**/*.js\""
+  },
+  "overrides": {
+    "minimatch": "11.0.5"
+  },
+  "devDependencies": {
+    "eslint": "10.14.0",
+    "globals": "17.14.0",
+    "prettier": "3.9.10"
+  }
+}
