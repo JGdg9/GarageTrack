@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createVehicle, deleteVehicle, getVehicles } from '../js/api.js';
+import { createVehicle, deleteVehicle, getDemoConfiguration, getVehicles } from '../js/api.js';
 
 const originalFetch = globalThis.fetch;
 
@@ -23,6 +23,23 @@ test('getVehicles sends a GET request and returns the vehicle list', async () =>
     assert.equal(requestUrl, '/api/v1/vehicles');
     assert.equal(requestOptions.method, 'GET');
     assert.deepEqual(vehicles, [{ id: 1, brand: 'Honda' }]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('getDemoConfiguration reads the public demo mode', async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, '/api/v1/config');
+    assert.equal(options.method, 'GET');
+    return new Response(JSON.stringify({ demo_read_only: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  try {
+    assert.deepEqual(await getDemoConfiguration(), { demo_read_only: true });
   } finally {
     globalThis.fetch = originalFetch;
   }
