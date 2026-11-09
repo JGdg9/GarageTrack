@@ -7,7 +7,7 @@ ENV RENDER_EPHEMERAL_MYSQL=true
 ENV PORT=10000
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y ca-certificates curl debconf-utils \
+    && apt-get install --no-install-recommends -y ca-certificates curl debconf-utils lsb-release \
     && curl --fail --silent --show-error --location \
         https://dev.mysql.com/get/mysql-apt-config_0.8.40-1_all.deb \
         --output /tmp/mysql-apt-config.deb \
