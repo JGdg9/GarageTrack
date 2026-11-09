@@ -1,6 +1,6 @@
 # GarageTrack
 
-GarageTrack is a local web app for recording vehicles, tracking maintenance, and reviewing costs. It keeps vehicle and maintenance data in MySQL and serves a small responsive interface from FastAPI.
+GarageTrack is a web app for recording vehicles, tracking maintenance, and reviewing costs. A local installation supports full editing. The public portfolio demo uses synthetic sample data and is read-only.
 
 ## Features
 
@@ -8,9 +8,10 @@ GarageTrack is a local web app for recording vehicles, tracking maintenance, and
 - Record, view, update, and delete maintenance entries.
 - See the maintenance history and total expenses for each vehicle.
 - View vehicle, maintenance, and expense totals on the dashboard.
+- Explore the public demo without changing its shared sample records.
 - Use the API documentation at `/docs`.
 
-The first version is for one local user. It does not include accounts, authentication, or external services.
+The local version is for one user and does not include accounts or authentication. Public writes are disabled in the deployed demo at both the interface and API layers.
 
 ## Technologies
 
@@ -26,14 +27,20 @@ The browser sends JSON requests to the FastAPI application. FastAPI validates re
 ```text
 GarageTrack/
 ├── .github/workflows/quality.yml
+├── .dockerignore
+├── Dockerfile
 ├── backend/
 │   ├── app/
 │   │   ├── main.py
+│   │   ├── config.py
 │   │   ├── database.py
 │   │   ├── init_db.py
 │   │   ├── models.py
 │   │   ├── schemas.py
+│   │   ├── seed_demo.py
+│   │   ├── startup.py
 │   │   ├── routers/
+│   │   │   ├── configuration.py
 │   │   │   ├── maintenance.py
 │   │   │   ├── statistics.py
 │   │   │   └── vehicles.py
@@ -45,6 +52,9 @@ GarageTrack/
 │   └── tests/
 │       ├── conftest.py
 │       ├── integration/
+│       │   ├── test_demo_mode.py
+│       │   ├── test_demo_seed.py
+│       │   └── test_startup.py
 │       └── unit/
 ├── frontend/
 │   ├── assets/dashboard.png
@@ -96,9 +106,24 @@ All application routes use the `/api/v1` prefix. Request and response bodies use
 | `DELETE` | `/api/v1/maintenance/{maintenance_id}`      | Delete a maintenance entry                    |
 | `GET`    | `/api/v1/vehicles/{vehicle_id}/expenses`    | Get one vehicle's expense total               |
 | `GET`    | `/api/v1/statistics`                        | Get dashboard totals and per-vehicle expenses |
+| `GET`    | `/api/v1/config`                            | Read the public demo mode                     |
 | `GET`    | `/health`                                   | Check that the web service responds           |
 
 FastAPI publishes the OpenAPI interface at `/docs` and `/openapi.json`.
+
+## Public demo
+
+The public demo is deployed from the root `Dockerfile`. The container waits for MySQL, creates any missing tables from the SQLAlchemy models, and inserts two synthetic vehicles and three service records only when `DEMO_READ_ONLY=true` and the database is empty. The image defaults to read-only mode. Write requests receive HTTP `403` even if they bypass the frontend.
+
+To host the demo on Railway:
+
+1. Create a project and add Railway's MySQL service. Keep its network private and use the database name `garagetrack`.
+2. Keep the MySQL volume mounted at `/var/lib/mysql` so its files survive container restarts.
+3. Deploy the public GarageTrack repository from its `main` branch. Railway detects the Dockerfile and builds the app service.
+4. In the app service, set `DATABASE_URL` to the MySQL service reference `${{MySQL.MYSQL_URL}}` and set `DEMO_READ_ONLY` to `true`. Name the database service `MySQL` or update the reference to match its name.
+5. Generate an HTTPS public domain for the app service. The same domain serves the interface, `/health`, and `/docs`.
+
+The GitHub source and the Railway demo are public, so the demo contains only synthetic records. Do not store real vehicle information there. Railway's Free plan currently includes $1 of monthly usage credit; services can stop when credits run out. Trial volumes are deleted 30 days after the trial credits expire. A sleeping service may take extra time to answer its first request. Check [Railway pricing](https://docs.railway.com/pricing/plans), [trial limits](https://docs.railway.com/pricing/free-trial), and [MySQL setup](https://docs.railway.com/databases/mysql) before relying on the public URL.
 
 ## Windows setup
 
@@ -200,11 +225,11 @@ The integration test fixture overrides the API's normal SQLAlchemy session with 
 
 ## CI and delivery
 
-The GitHub Actions workflow runs on pull requests, pushes to `main`, and manual runs. It installs the pinned Python and JavaScript dependencies, checks Ruff, Prettier, and ESLint, runs frontend and unit tests, and runs MySQL integration tests against a temporary MySQL 8.4 service.
+The GitHub Actions workflow runs on pull requests, pushes to `main`, and manual runs. It installs the pinned Python and JavaScript dependencies, checks Ruff, Prettier, and ESLint, runs frontend and unit tests, runs MySQL integration tests against a temporary MySQL 8.4 service, and builds the Docker image to verify the public demo package.
 
 After all checks pass on a push to `main`, the delivery job archives the committed project files and uploads a ZIP artifact associated with that commit. The artifact expires after 90 days. This repository and its artifact are public, so anyone with repository read access can download the ZIP. The package contains only tracked files; the workflow fails if `.env`, `.local`, `.venv`, or `node_modules` is tracked. It does not include database contents or credentials.
 
-CI and delivery are configured locally. Their remote GitHub results remain unverified until the workflow has run on GitHub.
+The delivery package is a public source archive associated with its commit, not a deployed image. GitHub artifacts are available to repository readers and expire after 90 days. The remote GitHub results remain unverified until the workflow has run on GitHub.
 
 ## Real application capture
 
@@ -228,6 +253,7 @@ When a user saves a vehicle, `frontend/js/app.js` reads the form and `frontend/j
 - **How does Python connect to MySQL?** `backend/app/database.py` creates one SQLAlchemy engine from `DATABASE_URL`; PyMySQL is the MySQL driver; each request receives a managed SQLAlchemy session.
 - **What do the tables and keys do?** `vehicles.id` uniquely identifies a vehicle. `maintenance_records.vehicle_id` references it, enforcing the one-to-many relationship. `ON DELETE RESTRICT` protects its history.
 - **How are expenses calculated?** SQL `SUM` adds `DECIMAL(10,2)` maintenance costs. `LEFT OUTER JOIN` and `COALESCE` keep vehicles with no records in the statistics.
+- **How is the public demo protected?** `backend/app/config.py` reads `DEMO_READ_ONLY`; mutation routes reject writes and the frontend hides edit controls. `backend/app/seed_demo.py` inserts sample data once when the demo database is empty.
 - **What do HTTP status codes communicate?** `201` means created, `204` means deleted without a response body, `404` means missing, `409` means a conflict such as a duplicate plate or blocked vehicle deletion, and `422` means invalid input.
 - **How were the tests written?** TDD records expected behavior first, checks the intended failure, implements the smallest change, and reruns tests after refactoring. Unit tests cover validation; integration tests exercise the real MySQL database through FastAPI.
 - **What does CI do?** It runs code style checks and automated tests for each pull request and main-branch push.
