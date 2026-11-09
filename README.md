@@ -221,7 +221,7 @@ The integration test fixture overrides the API's normal SQLAlchemy session with 
 
 ## CI and delivery
 
-The GitHub Actions workflow runs on pull requests, pushes to `main`, and manual runs. It installs the pinned Python and JavaScript dependencies, checks Ruff, Prettier, and ESLint, runs frontend and unit tests, runs MySQL integration tests against a temporary MySQL 8.4 service, builds both Docker images, and starts the Render image to verify its synthetic data and read-only API.
+The GitHub Actions workflow runs on pull requests, pushes to `development` and `main`, and manual runs. It installs the pinned Python and JavaScript dependencies, checks Ruff, Prettier, and ESLint, runs frontend and unit tests, runs MySQL integration tests against a temporary MySQL 8.4 service, builds both Docker images, and starts the Render image to verify its synthetic data and read-only API.
 
 After all checks pass on a push to `main`, the delivery job archives the committed project files and uploads a ZIP artifact associated with that commit. The artifact expires after 90 days. This repository and its artifact are public, so anyone with repository read access can download the ZIP. The package contains only tracked files; the workflow fails if `.env`, `.local`, `.venv`, or `node_modules` is tracked. It does not include database contents or credentials.
 
