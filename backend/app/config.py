@@ -7,6 +7,10 @@ def is_demo_read_only() -> bool:
     return os.getenv("DEMO_READ_ONLY", "false").strip().lower() == "true"
 
 
+def uses_ephemeral_render_mysql() -> bool:
+    return os.getenv("RENDER_EPHEMERAL_MYSQL", "false").strip().lower() == "true"
+
+
 def require_writable_mode() -> None:
     if is_demo_read_only():
         raise HTTPException(
