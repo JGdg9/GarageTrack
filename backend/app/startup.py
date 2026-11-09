@@ -100,7 +100,8 @@ def configure_ephemeral_database() -> None:
         "CREATE USER IF NOT EXISTS 'garagetrack_app'@'localhost' "
         f"IDENTIFIED BY '{app_password}'; "
         f"ALTER USER 'garagetrack_app'@'localhost' IDENTIFIED BY '{app_password}'; "
-        "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, REFERENCES ON garagetrack.* "
+        "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, REFERENCES "
+        "ON garagetrack.* "
         "TO 'garagetrack_app'@'localhost';"
     )
     subprocess.run(
