@@ -233,29 +233,3 @@ The dashboard capture below was taken from the locally running app with temporar
 
 ![GarageTrack dashboard](frontend/assets/dashboard.png)
 
-## How to explain GarageTrack
-
-### Request flow
-
-When a user saves a vehicle, `frontend/js/app.js` reads the form and `frontend/js/form_data.js` normalizes its values. `frontend/js/api.js` sends JSON with `fetch()` to `POST /api/v1/vehicles`. The FastAPI router receives a Pydantic `VehicleCreate` schema, calls `backend/app/services/vehicles.py`, and SQLAlchemy writes the `Vehicle` model to MySQL. FastAPI returns JSON, and the frontend updates the page using DOM elements and `textContent`.
-
-### Interview notes
-
-- **What problem does it solve?** It keeps vehicle details, service history, and maintenance costs in one local app.
-- **What does the frontend do?** It presents the dashboard, vehicle list, and vehicle detail view; collects input; calls the API; and reports loading, success, and error states.
-- **What does the backend do?** FastAPI validates requests, runs the business operations, queries MySQL, and returns HTTP responses.
-- **What is a REST API?** It exposes resources through URLs and HTTP methods. For example, `POST /api/v1/vehicles` creates a vehicle and `GET /api/v1/vehicles/{vehicle_id}` reads one.
-- **Why FastAPI, Pydantic, and SQLAlchemy?** FastAPI maps HTTP requests to Python functions, Pydantic validates JSON fields, and SQLAlchemy maps Python models to parameterized SQL queries.
-- **How does Python connect to MySQL?** `backend/app/database.py` creates one SQLAlchemy engine from `DATABASE_URL`; PyMySQL is the MySQL driver; each request receives a managed SQLAlchemy session.
-- **What do the tables and keys do?** `vehicles.id` uniquely identifies a vehicle. `maintenance_records.vehicle_id` references it, enforcing the one-to-many relationship. `ON DELETE RESTRICT` protects its history.
-- **How are expenses calculated?** SQL `SUM` adds `DECIMAL(10,2)` maintenance costs. `LEFT OUTER JOIN` and `COALESCE` keep vehicles with no records in the statistics.
-- **How is the public demo protected?** `backend/app/config.py` reads `DEMO_READ_ONLY`; mutation routes reject writes and the frontend hides edit controls. `backend/app/seed_demo.py` inserts sample data once when the demo database is empty.
-- **What do HTTP status codes communicate?** `201` means created, `204` means deleted without a response body, `404` means missing, `409` means a conflict such as a duplicate plate or blocked vehicle deletion, and `422` means invalid input.
-- **How were the tests written?** TDD records expected behavior first, checks the intended failure, implements the smallest change, and reruns tests after refactoring. Unit tests cover validation; integration tests exercise the real MySQL database through FastAPI.
-- **What does CI do?** It runs code style checks and automated tests for each pull request and main-branch push.
-- **What does CD do?** After CI passes on `main`, it packages that commit and stores a downloadable versioned ZIP artifact.
-- **Why this architecture?** Separate routers, services, schemas, and database models keep HTTP handling, business operations, validation, and persistence understandable without extra framework layers.
-
-### LinkedIn summary
-
-> I built GarageTrack, a local vehicle-maintenance tracker using Python, FastAPI, MySQL, and a responsive HTML/CSS/JavaScript interface. It supports vehicle and maintenance CRUD, decimal expense totals, a REST API, unit and MySQL integration tests, and GitHub Actions CI. I focused on keeping the code small, readable, and easy to explain.
