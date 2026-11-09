@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 MIN_VEHICLE_YEAR = 1886
 MAX_VEHICLE_YEAR = date.today().year + 1
@@ -53,3 +53,40 @@ class MaintenanceCreate(BaseModel):
             return None
         normalized_value = value.strip()
         return normalized_value or None
+
+
+class VehicleResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    brand: str
+    model: str
+    year: int
+    license_plate: str | None
+    current_mileage: int
+
+
+class MaintenanceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    vehicle_id: int
+    maintenance_type: str
+    maintenance_date: date
+    mileage: int
+    cost: Decimal
+    description: str | None
+
+
+class VehicleExpenseResponse(BaseModel):
+    vehicle_id: int
+    brand: str
+    model: str
+    total_expenses: Decimal
+
+
+class StatisticsResponse(BaseModel):
+    total_vehicles: int
+    total_maintenance_records: int
+    total_expenses: Decimal
+    vehicle_expenses: list[VehicleExpenseResponse]
