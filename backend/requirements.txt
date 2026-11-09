@@ -1,5 +1,5 @@
 fastapi==0.162.2
-httpx==0.28.1
+httpx2==2.16.0
 PyMySQL==1.2.3
 pydantic==2.14.3
 python-dotenv==1.2.4
