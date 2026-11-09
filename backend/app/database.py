@@ -12,12 +12,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / ".env")
 
 
+def normalize_database_url(database_url: str) -> str:
+    if database_url.startswith("mysql://"):
+        return f"mysql+pymysql://{database_url.removeprefix('mysql://')}"
+    return database_url
+
+
 @lru_cache
 def get_engine() -> Engine:
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise RuntimeError("DATABASE_URL is not configured.")
-    return create_engine(database_url, pool_pre_ping=True)
+    return create_engine(normalize_database_url(database_url), pool_pre_ping=True)
 
 
 def get_session() -> Generator[Session, None, None]:
