@@ -62,6 +62,17 @@ def test_maintenance_cost_allows_at_most_two_decimal_places() -> None:
         MaintenanceCreate(**valid_maintenance_data(cost="12.345"))
 
 
+def test_maintenance_cost_accepts_maximum_database_value() -> None:
+    maintenance = MaintenanceCreate(**valid_maintenance_data(cost="99999999.99"))
+
+    assert maintenance.cost == Decimal("99999999.99")
+
+
+def test_maintenance_cost_cannot_exceed_database_precision() -> None:
+    with pytest.raises(ValidationError):
+        MaintenanceCreate(**valid_maintenance_data(cost="100000000.00"))
+
+
 def test_blank_maintenance_description_is_treated_as_missing() -> None:
     maintenance = MaintenanceCreate(**valid_maintenance_data(description=" "))
 
