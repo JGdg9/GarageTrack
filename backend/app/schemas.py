@@ -28,3 +28,11 @@ class VehicleCreate(BaseModel):
             return None
         normalized_value = value.strip().upper()
         return normalized_value or None
+
+
+class MaintenanceCreate(BaseModel):
+    maintenance_type: str
+    maintenance_date: date
+    mileage: int
+    cost: float
+    description: str | None = None
