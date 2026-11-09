@@ -7,7 +7,7 @@ ENV RENDER_EPHEMERAL_MYSQL=true
 ENV PORT=10000
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y ca-certificates curl debconf-utils lsb-release wget \
+    && apt-get install --no-install-recommends -y ca-certificates curl debconf-utils gnupg lsb-release wget \
     && curl --fail --silent --show-error --location \
         https://dev.mysql.com/get/mysql-apt-config_0.8.40-1_all.deb \
         --output /tmp/mysql-apt-config.deb \
@@ -20,7 +20,7 @@ RUN apt-get update \
     && printf '%s\n' '#!/bin/sh' 'exit 101' > /usr/sbin/policy-rc.d \
     && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y mysql-server \
     && rm /usr/sbin/policy-rc.d /tmp/mysql-apt-config.deb \
-    && apt-get purge -y debconf-utils curl \
+    && apt-get purge -y debconf-utils curl gnupg \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
