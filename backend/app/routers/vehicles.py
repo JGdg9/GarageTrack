@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
 from sqlalchemy.orm import Session
 
+from app.config import require_writable_mode
 from app.database import get_session
 from app.schemas import VehicleCreate, VehicleExpenseResponse, VehicleResponse
 from app.services.vehicles import (
@@ -39,7 +40,12 @@ def read_vehicle(
     return vehicle
 
 
-@router.post("", response_model=VehicleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=VehicleResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_writable_mode)],
+)
 def add_vehicle(
     vehicle_data: VehicleCreate, session: Annotated[Session, Depends(get_session)]
 ) -> VehicleResponse:
@@ -52,7 +58,11 @@ def add_vehicle(
         ) from None
 
 
-@router.put("/{vehicle_id}", response_model=VehicleResponse)
+@router.put(
+    "/{vehicle_id}",
+    response_model=VehicleResponse,
+    dependencies=[Depends(require_writable_mode)],
+)
 def edit_vehicle(
     vehicle_data: VehicleCreate,
     vehicle_id: Annotated[int, Path(gt=0)],
@@ -73,7 +83,11 @@ def edit_vehicle(
     return vehicle
 
 
-@router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{vehicle_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_writable_mode)],
+)
 def remove_vehicle(
     vehicle_id: Annotated[int, Path(gt=0)],
     session: Annotated[Session, Depends(get_session)],

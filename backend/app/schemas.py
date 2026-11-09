@@ -90,3 +90,7 @@ class StatisticsResponse(BaseModel):
     total_maintenance_records: int
     total_expenses: Decimal
     vehicle_expenses: list[VehicleExpenseResponse]
+
+
+class DemoConfigurationResponse(BaseModel):
+    demo_read_only: bool

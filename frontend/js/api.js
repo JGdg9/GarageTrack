@@ -43,6 +43,10 @@ export function getVehicles() {
   return sendRequest('/vehicles');
 }
 
+export function getDemoConfiguration() {
+  return sendRequest('/config');
+}
+
 export function getVehicle(vehicleId) {
   return sendRequest(`/vehicles/${vehicleId}`);
 }

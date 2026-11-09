@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
 from sqlalchemy.orm import Session
 
+from app.config import require_writable_mode
 from app.database import get_session
 from app.schemas import MaintenanceCreate, MaintenanceResponse
 from app.services.maintenance import (
@@ -36,6 +37,7 @@ def read_maintenance_history(
     "/api/v1/vehicles/{vehicle_id}/maintenance",
     response_model=MaintenanceResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_writable_mode)],
 )
 def add_maintenance_record(
     record_data: MaintenanceCreate,
@@ -57,7 +59,11 @@ def add_maintenance_record(
     return record
 
 
-@router.put("/api/v1/maintenance/{maintenance_id}", response_model=MaintenanceResponse)
+@router.put(
+    "/api/v1/maintenance/{maintenance_id}",
+    response_model=MaintenanceResponse,
+    dependencies=[Depends(require_writable_mode)],
+)
 def edit_maintenance_record(
     record_data: MaintenanceCreate,
     maintenance_id: Annotated[int, Path(gt=0)],
@@ -82,6 +88,7 @@ def edit_maintenance_record(
 @router.delete(
     "/api/v1/maintenance/{maintenance_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_writable_mode)],
 )
 def remove_maintenance_record(
     maintenance_id: Annotated[int, Path(gt=0)],

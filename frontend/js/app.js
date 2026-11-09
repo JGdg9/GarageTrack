@@ -3,6 +3,7 @@ import {
   createVehicle,
   deleteMaintenanceRecord,
   deleteVehicle,
+  getDemoConfiguration,
   getMaintenanceHistory,
   getStatistics,
   getVehicle,
@@ -21,8 +22,18 @@ const currencyFormatter = new Intl.NumberFormat('en-IE', {
   currency: 'EUR',
 });
 const integerFormatter = new Intl.NumberFormat('en-US');
+const mutationActions = new Set([
+  'new-vehicle',
+  'new-maintenance',
+  'edit-vehicle',
+  'delete-vehicle',
+  'edit-maintenance',
+  'delete-maintenance',
+]);
 const state = {
   view: 'dashboard',
+  demoReadOnly: true,
+  configurationLoaded: false,
   vehicleId: null,
   vehicles: [],
   statistics: null,
@@ -55,27 +66,43 @@ function createButton(label, action, className = 'button button-secondary') {
 function createPageHeader() {
   const header = createElement('header', 'page-heading');
   const text = createElement('div', 'page-heading-copy');
-  const eyebrow = createElement('p', 'eyebrow', 'Garage overview');
+  const eyebrow = createElement(
+    'p',
+    'eyebrow',
+    state.demoReadOnly ? 'Public read-only demo' : 'Garage overview',
+  );
   const title = createElement('h1', 'page-title');
   const subtitle = createElement('p', 'page-subtitle');
   const actions = createElement('div', 'page-heading-actions');
 
   if (state.view === 'dashboard') {
     title.textContent = 'Overview';
-    subtitle.textContent = 'A clear view of your vehicles and their upkeep.';
-    actions.append(createButton('Add vehicle', 'new-vehicle', 'button button-primary'));
+    subtitle.textContent = state.demoReadOnly
+      ? 'Explore the sample vehicles and maintenance history. Editing is disabled.'
+      : 'A clear view of your vehicles and their upkeep.';
+    if (!state.demoReadOnly) {
+      actions.append(createButton('Add vehicle', 'new-vehicle', 'button button-primary'));
+    }
   } else if (state.view === 'vehicles') {
     title.textContent = 'Your vehicles';
-    subtitle.textContent = 'Keep the details of every vehicle up to date.';
-    actions.append(createButton('Add vehicle', 'new-vehicle', 'button button-primary'));
+    subtitle.textContent = state.demoReadOnly
+      ? 'Browse the sample vehicle records. Editing is disabled.'
+      : 'Keep the details of every vehicle up to date.';
+    if (!state.demoReadOnly) {
+      actions.append(createButton('Add vehicle', 'new-vehicle', 'button button-primary'));
+    }
   } else {
     const hasLoadedVehicle = state.vehicle?.id === state.vehicleId;
     title.textContent = hasLoadedVehicle
       ? `${state.vehicle.brand} ${state.vehicle.model}`
       : 'Vehicle details';
-    subtitle.textContent = 'Maintenance history and lifetime expenses.';
+    subtitle.textContent = state.demoReadOnly
+      ? 'Maintenance history and lifetime expenses. Editing is disabled.'
+      : 'Maintenance history and lifetime expenses.';
     actions.append(createButton('Back to vehicles', 'navigate-vehicles'));
-    actions.append(createButton('Add maintenance', 'new-maintenance', 'button button-primary'));
+    if (!state.demoReadOnly) {
+      actions.append(createButton('Add maintenance', 'new-maintenance', 'button button-primary'));
+    }
   }
 
   text.append(eyebrow, title, subtitle);
@@ -165,9 +192,11 @@ function renderDashboard() {
     vehicleSection.append(
       createEmptyState(
         'Your garage is ready',
-        'Add your first vehicle to start keeping track of maintenance and costs.',
-        'Add a vehicle',
-        'new-vehicle',
+        state.demoReadOnly
+          ? 'This public demo uses sample vehicle records.'
+          : 'Add your first vehicle to start keeping track of maintenance and costs.',
+        state.demoReadOnly ? null : 'Add a vehicle',
+        state.demoReadOnly ? null : 'new-vehicle',
       ),
     );
   } else {
@@ -195,14 +224,16 @@ function createVehicleCard(vehicle) {
   );
   const actions = createElement('div', 'vehicle-card-actions');
   const detailsButton = createButton('Details', 'open-vehicle', 'button button-primary');
-  const editButton = createButton('Edit', 'edit-vehicle', 'button button-secondary');
-  const deleteButton = createButton('Delete', 'delete-vehicle', 'button button-danger');
-
-  [detailsButton, editButton, deleteButton].forEach((button) => {
-    button.dataset.id = vehicle.id;
-  });
+  detailsButton.dataset.id = vehicle.id;
   cardTop.append(plate, year);
-  actions.append(detailsButton, editButton, deleteButton);
+  actions.append(detailsButton);
+  if (!state.demoReadOnly) {
+    const editButton = createButton('Edit', 'edit-vehicle', 'button button-secondary');
+    const deleteButton = createButton('Delete', 'delete-vehicle', 'button button-danger');
+    editButton.dataset.id = vehicle.id;
+    deleteButton.dataset.id = vehicle.id;
+    actions.append(editButton, deleteButton);
+  }
   card.append(cardTop, title, mileage, actions);
   return card;
 }
@@ -216,9 +247,11 @@ function renderVehicles() {
     section.append(
       createEmptyState(
         'No vehicles yet',
-        'Add a vehicle to create its maintenance history and expense summary.',
-        'Add a vehicle',
-        'new-vehicle',
+        state.demoReadOnly
+          ? 'This public demo uses sample vehicle records.'
+          : 'Add a vehicle to create its maintenance history and expense summary.',
+        state.demoReadOnly ? null : 'Add a vehicle',
+        state.demoReadOnly ? null : 'new-vehicle',
       ),
     );
   } else {
@@ -247,9 +280,6 @@ function createMaintenanceCard(record) {
   const title = createElement('h3', 'maintenance-card-title', record.maintenance_type);
   const date = createElement('time', 'maintenance-card-date', formatDate(record.maintenance_date));
   const details = createElement('dl', 'maintenance-card-details');
-  const actions = createElement('div', 'maintenance-card-actions');
-  const editButton = createButton('Edit', 'edit-maintenance', 'button button-secondary');
-  const deleteButton = createButton('Delete', 'delete-maintenance', 'button button-danger');
 
   date.dateTime = record.maintenance_date;
   titleGroup.append(title, date);
@@ -261,10 +291,16 @@ function createMaintenanceCard(record) {
     createDefinitionItem('Mileage', `${integerFormatter.format(record.mileage)} km`),
     createDefinitionItem('Description', record.description || 'No notes'),
   );
-  editButton.dataset.id = record.id;
-  deleteButton.dataset.id = record.id;
-  actions.append(editButton, deleteButton);
-  card.append(header, details, actions);
+  card.append(header, details);
+  if (!state.demoReadOnly) {
+    const actions = createElement('div', 'maintenance-card-actions');
+    const editButton = createButton('Edit', 'edit-maintenance', 'button button-secondary');
+    const deleteButton = createButton('Delete', 'delete-maintenance', 'button button-danger');
+    editButton.dataset.id = record.id;
+    deleteButton.dataset.id = record.id;
+    actions.append(editButton, deleteButton);
+    card.append(actions);
+  }
   return card;
 }
 
@@ -275,17 +311,19 @@ function renderVehicleDetails() {
   const summaryHeading = createElement('div', 'section-heading');
   const summaryTitle = createElement('div', 'section-heading-copy');
   const summaryActions = createElement('div', 'section-actions');
-  const editButton = createButton('Edit vehicle', 'edit-vehicle', 'button button-secondary');
-  const deleteButton = createButton('Delete vehicle', 'delete-vehicle', 'button button-danger');
   const definitions = createElement('dl', 'vehicle-definitions');
 
   summaryTitle.append(
     createElement('p', 'eyebrow', 'Vehicle profile'),
     createElement('h2', 'section-title', createVehicleLabel(vehicle)),
   );
-  editButton.dataset.id = vehicle.id;
-  deleteButton.dataset.id = vehicle.id;
-  summaryActions.append(editButton, deleteButton);
+  if (!state.demoReadOnly) {
+    const editButton = createButton('Edit vehicle', 'edit-vehicle', 'button button-secondary');
+    const deleteButton = createButton('Delete vehicle', 'delete-vehicle', 'button button-danger');
+    editButton.dataset.id = vehicle.id;
+    deleteButton.dataset.id = vehicle.id;
+    summaryActions.append(editButton, deleteButton);
+  }
   summaryHeading.append(summaryTitle, summaryActions);
   definitions.append(
     createDefinitionItem('Year', String(vehicle.year)),
@@ -303,15 +341,21 @@ function renderVehicleDetails() {
 
   const maintenanceSection = createElement('section', 'surface-card');
   maintenanceSection.append(
-    createSectionHeading('Maintenance history', 'Add maintenance', 'new-maintenance'),
+    createSectionHeading(
+      'Maintenance history',
+      state.demoReadOnly ? null : 'Add maintenance',
+      state.demoReadOnly ? null : 'new-maintenance',
+    ),
   );
   if (state.maintenanceRecords.length === 0) {
     maintenanceSection.append(
       createEmptyState(
         'No maintenance recorded',
-        "Add the first service to start this vehicle's history.",
-        'Add maintenance',
-        'new-maintenance',
+        state.demoReadOnly
+          ? 'No sample maintenance records are available for this vehicle.'
+          : "Add the first service to start this vehicle's history.",
+        state.demoReadOnly ? null : 'Add maintenance',
+        state.demoReadOnly ? null : 'new-maintenance',
       ),
     );
   } else {
@@ -399,6 +443,39 @@ async function loadCurrentView() {
     state.isLoading = false;
     renderPage();
   }
+}
+
+async function initializeApplication() {
+  state.isLoading = true;
+  state.error = null;
+  renderPage();
+
+  try {
+    const configuration = await getDemoConfiguration();
+    state.demoReadOnly = configuration.demo_read_only;
+    state.configurationLoaded = true;
+    updateModeIndicator();
+    await loadCurrentView();
+  } catch (error) {
+    state.demoReadOnly = true;
+    state.error = getErrorMessage(error);
+    state.isLoading = false;
+    updateModeIndicator();
+    renderPage();
+  }
+}
+
+function updateModeIndicator() {
+  const modeLabel = document.querySelector('#mode-label');
+  const modeDescription = document.querySelector('#mode-description');
+  if (!modeLabel || !modeDescription) {
+    return;
+  }
+
+  modeLabel.textContent = state.demoReadOnly ? 'Public demo' : 'Local garage';
+  modeDescription.textContent = state.demoReadOnly
+    ? 'Read-only sample data'
+    : 'Runs on this device';
 }
 
 function getErrorMessage(error) {
@@ -640,12 +717,21 @@ async function handleAction(actionButton) {
   const action = actionButton.dataset.action;
   const recordId = Number(actionButton.dataset.id);
 
+  if (state.demoReadOnly && mutationActions.has(action)) {
+    showToast('This public demo is read-only.', 'error');
+    return;
+  }
+
   if (action === 'navigate-vehicles') {
     state.view = 'vehicles';
     state.vehicleId = null;
     await loadCurrentView();
   } else if (action === 'retry') {
-    await loadCurrentView();
+    if (state.configurationLoaded) {
+      await loadCurrentView();
+    } else {
+      await initializeApplication();
+    }
   } else if (action === 'new-vehicle') {
     openVehicleDialog();
   } else if (action === 'new-maintenance') {
@@ -692,6 +778,10 @@ async function handleFormSubmit(event) {
   }
 
   event.preventDefault();
+  if (state.demoReadOnly) {
+    showToast('This public demo is read-only.', 'error');
+    return;
+  }
   if (form.dataset.saving === 'true') {
     return;
   }
@@ -770,4 +860,4 @@ appDialog.addEventListener('click', (event) => {
   }
 });
 
-void loadCurrentView();
+void initializeApplication();
