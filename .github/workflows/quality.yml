@@ -67,6 +67,8 @@ jobs:
         run: python -m pytest backend/tests/unit
       - name: Run MySQL integration tests
         run: python -m pytest backend/tests/integration
+      - name: Build the public demo container
+        run: docker build --tag garagetrack:check .
   delivery:
     name: Package verified source
     needs: quality
