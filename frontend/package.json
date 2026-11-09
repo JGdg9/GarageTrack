@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "format:check": "prettier --check \"index.html\" \"styles.css\" \"js/**/*.js\" \"test/**/*.js\"",
+    "format:check": "prettier --check \"index.html\" \"styles.css\" \"js/**/*.js\" \"test/**/*.js\" \"../README.md\" \"../.github/workflows/quality.yml\"",
     "lint": "eslint \"js/**/*.js\" \"test/**/*.js\"",
     "test": "node --test"
   },
